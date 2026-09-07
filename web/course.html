@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cours — S2M</title>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="assets/s2m-logo.png" alt="S2M" />
+    <span class="divider"></span>
+    <div>
+      <h1 id="course-title">Cours</h1>
+      <p id="course-meta">Chargement…</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="progress-wrap" title="Progression dans le cours">
+      <div class="progress-bar"><div id="progress-fill"></div></div>
+      <span id="progress-label">0 %</span>
+    </div>
+    <a class="back-link" href="index.html">← Catalogue</a>
+  </div>
+</header>
+
+<main class="layout">
+  <nav class="sidebar" aria-label="Sommaire du cours">
+    <h2>Sommaire</h2>
+    <ol id="chapter-list"></ol>
+    <div class="sidebar-footer">
+      <button id="exam-btn" class="exam-item" disabled>
+        <span class="ico">🎓</span>
+        <span>
+          <span class="t">Évaluation finale</span>
+          <span class="d" id="exam-hint">Disponible à la fin du cours</span>
+        </span>
+      </button>
+    </div>
+  </nav>
+
+  <section class="content">
+    <!-- ===================== vue chapitre ===================== -->
+    <div id="view-chapter">
+      <div class="player-card">
+        <video id="player" controls preload="metadata" playsinline></video>
+        <div class="player-info">
+          <h2 id="chapter-title">—</h2>
+          <p id="chapter-time" class="muted"></p>
+          <div class="player-controls">
+            <button id="subtitle-btn" class="btn small">Sous-titres</button>
+            <button id="mark-btn" class="btn small" title="Surligner le passage en cours de lecture">
+              Surligner le passage
+            </button>
+            <span class="ai-notice" title="Structure, visuels et évaluation produits automatiquement">
+              <span class="ai-dot"></span> Contenu généré par IA — des erreurs sont possibles
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-panel="panel-transcript" role="tab">Transcription</button>
+        <button class="tab" data-panel="panel-summary" role="tab">Résumé</button>
+        <button class="tab" data-panel="panel-points" role="tab">Points clés</button>
+        <button class="tab" data-panel="panel-notes" role="tab">
+          Mes notes <span class="count" id="notes-count">0</span>
+        </button>
+        <button class="tab" data-panel="panel-read" role="tab" id="tab-read" hidden>Support</button>
+      </div>
+
+      <div id="panel-transcript" class="panel active">
+        <div class="transcript-toolbar">
+          <button id="follow-btn" class="btn small active" title="Faire défiler la transcription avec la vidéo">
+            Suivre la lecture
+          </button>
+          <span class="hint">
+            Cliquez une ligne pour y aller · double-cliquez pour surligner · bouton ✎ pour annoter
+          </span>
+        </div>
+        <div id="transcript" class="transcript"></div>
+      </div>
+
+      <div id="panel-summary" class="panel">
+        <div class="card"><p id="chapter-summary" style="margin:0"></p></div>
+      </div>
+
+      <div id="panel-points" class="panel">
+        <div class="card"><ul id="chapter-points" style="margin:0"></ul></div>
+      </div>
+
+      <div id="panel-notes" class="panel">
+        <div class="card" id="notes-container"></div>
+      </div>
+
+      <div id="panel-read" class="panel">
+        <div class="card">
+          <div class="pdf-actions">
+            <span class="muted">Support de formation complet, à lire ou télécharger.</span>
+            <a id="pdf-download" class="btn small" href="#" target="_blank" rel="noopener">
+              Ouvrir dans un onglet
+            </a>
+          </div>
+          <iframe id="pdf-frame" class="pdf-frame" title="Support de cours"></iframe>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button id="prev-btn" class="btn">← Chapitre précédent</button>
+        <button id="next-btn" class="btn primary">Chapitre suivant →</button>
+      </div>
+    </div>
+
+    <!-- ================== vue évaluation finale ================== -->
+    <div id="view-exam" hidden>
+      <div class="card">
+        <div class="exam-intro">
+          <h3>Évaluation finale</h3>
+          <p id="exam-desc">
+            Les questions portent sur l'ensemble du cours. Répondez à toutes,
+            puis validez pour obtenir votre score.
+          </p>
+        </div>
+        <div id="exam-container"></div>
+      </div>
+      <div class="nav-buttons">
+        <button id="exam-back" class="btn">← Revenir aux chapitres</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="assets/player.js"></script>
+</body>
+</html>

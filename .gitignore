@@ -1,0 +1,28 @@
+# Environnement
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.env
+.pytest_cache/
+
+# Dependances du moteur de rendu
+remotion/node_modules/
+
+# Productions : artefacts de travail, videos rendues, cours publies.
+# Tout est reproductible a partir d'un support ; rien de cela n'a sa place
+# dans le depot, et les videos pesent plus de cent megaoctets par cours.
+output/
+work/
+remotion/out_pdf/
+remotion/public/
+web/data/*
+!web/data/.gitkeep
+
+# Scripts de travail ponctuels. La negation est indispensable : sans elle la
+# regle avale aussi les __init__.py, les sous-paquets ne sont pas versionnes,
+# et un clone neuf echoue a l'installation.
+_*.py
+!__init__.py
+!__main__.py

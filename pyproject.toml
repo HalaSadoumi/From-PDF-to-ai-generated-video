@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf2course"
+version = "1.0.0"
+description = "Transformation d'un support de formation PDF en cours e-learning video"
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
+
+# Commandes nommees, disponibles apres `pip install -e .`. Elles evitent la
+# forme `python -m ...`, qui echoue des que le `python` du PATH n'est pas celui
+# de l'environnement virtuel — l'erreur la plus frequente a la prise en main.
+[project.scripts]
+course-from-pdf = "s2m_pipeline.from_slides.build_course_from_pdf:main"
+course-studio = "s2m_pipeline.studio.server:main"
+course-publish = "s2m_pipeline.core.web_export:main"
+course-quiz-docx = "s2m_pipeline.core.quiz_reference:main"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+# Disposition « src » : le code vit dans src/s2m_pipeline. Sans cette
+# declaration et sans installation, les commandes echouent avec
+# ModuleNotFoundError, parce que src/ n'est pas sur sys.path.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

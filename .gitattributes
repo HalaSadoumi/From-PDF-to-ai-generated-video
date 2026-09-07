@@ -1,0 +1,11 @@
+# Normalise les fins de ligne : le depot stocke en LF, chaque poste travaille
+# avec la convention de son systeme. Sans cela, un aller-retour Windows/Linux
+# fait apparaitre des differences sur des fichiers que personne n'a touches.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+*.mp4 binary
+*.wav binary

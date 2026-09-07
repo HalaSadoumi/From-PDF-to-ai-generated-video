@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Studio (catalogue + depot)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "s2m_pipeline.studio.server",
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Produire un cours depuis l'exemple",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "s2m_pipeline.from_slides.build_course_from_pdf",
+      "args": [
+        "--pdf", "docs/exemple/support.pdf",
+        "--course-id", "exemple",
+        "--title", "Cours d'exemple",
+        "--quiz-docx", "docs/exemple/quiz.docx"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ]
+}

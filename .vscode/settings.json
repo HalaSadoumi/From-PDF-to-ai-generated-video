@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": ".venv\Scripts\python.exe",
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests"],
+  "python.analysis.extraPaths": ["src"],
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.egg-info": true
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "[python]": { "editor.rulers": [96] }
+}

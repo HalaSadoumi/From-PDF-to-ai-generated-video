@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Studio — Espace de formation S2M</title>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="assets/s2m-logo.png" alt="S2M" />
+    <span class="divider"></span>
+    <div>
+      <h1>Studio</h1>
+      <p>Produire un cours à partir d'un support</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="quota" id="quota" title="Quota journalier du modèle de rédaction"></span>
+    <a class="btn" href="index.html">← Catalogue</a>
+  </div>
+</header>
+
+<main class="studio">
+
+  <section class="card studio-form">
+    <h2>Nouvelle formation</h2>
+    <p class="muted">
+      Déposez le support de formation. La chaîne le lit, écrit la narration,
+      synthétise la voix, dessine les schémas, rend les vidéos et publie le
+      cours au catalogue. Comptez environ une heure trente ; vous pouvez
+      fermer cette page, la production continue.
+    </p>
+
+    <form id="job-form" autocomplete="off">
+      <div class="field">
+        <label for="f-title">Titre du cours</label>
+        <input id="f-title" name="title" type="text" required
+               placeholder="Sécurité SI : une priorité pour chacun" />
+      </div>
+
+      <div class="field">
+        <label for="f-description">Description <span class="opt-tag">facultatif</span></label>
+        <textarea id="f-description" name="description" rows="2"
+                  placeholder="Une phrase affichée sur la carte du catalogue."></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-pdf">Support de formation <span class="req-tag">PDF</span></label>
+          <input id="f-pdf" name="pdf" type="file" accept=".pdf" required />
+        </div>
+        <div class="field">
+          <label for="f-quiz">Quiz officiel <span class="opt-tag">Word, facultatif</span></label>
+          <input id="f-quiz" name="quiz" type="file" accept=".docx" />
+        </div>
+      </div>
+      <p class="hint">
+        Sans quiz fourni, les questions sont générées à partir de la narration.
+        Avec, ce sont les vôtres qui servent d'évaluation finale.
+      </p>
+
+      <div class="field">
+        <label>Parcours</label>
+        <div class="radio-row">
+          <label class="radio">
+            <input type="radio" name="track" value="essentiel" checked />
+            <span><b>Essentiel</b> — chapitres courts, droit au but</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="track" value="detaille" />
+            <span><b>Détaillé</b> — pour approfondir</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit" id="submit-btn">Lancer la production</button>
+        <span id="form-msg" class="form-msg"></span>
+      </div>
+    </form>
+  </section>
+
+  <section class="card studio-jobs">
+    <h2>Productions</h2>
+    <div id="jobs"><p class="muted">Chargement…</p></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  S2M Casablanca — Espace de formation interne
+</footer>
+
+<script src="assets/studio.js"></script>
+</body>
+</html>

@@ -35,6 +35,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 REMOTION_DIR = PROJECT_ROOT / "remotion"
 
 
+def _done(message: str) -> None:
+    """Compte rendu de fin d'etage, repris tel quel dans le journal du studio."""
+    print(f"  -> {message}", flush=True)
+
+
 def run_images(paths: Paths) -> None:
     plans: dict[str, dict] = json.loads(paths.visuals.read_text(encoding="utf-8"))
     paths.backdrops.mkdir(parents=True, exist_ok=True)

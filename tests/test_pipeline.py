@@ -325,3 +325,51 @@ def test_staging_replaces_a_file_left_by_another_course(tmp_path, monkeypatch):
 
     listing = json.loads((remotion / "public" / "backdrops.json").read_text(encoding="utf-8"))
     assert listing == ["chapter_03_scene_00"]
+
+
+# ------------------------------------------------- integrite des modules
+def test_no_module_uses_an_undefined_name():
+    """Aucun module n'appelle un nom qui n'existe pas chez lui.
+
+    Ce test est ne d'un defaut reel : en deplacant les fonctions de rendu vers
+    core/render.py, la fonction d'affichage _done qu'elles appellent est restee
+    dans le module d'origine. Rien ne le signalait — ni l'import, ni la
+    compilation — parce qu'un nom manquant ne leve une erreur qu'a l'instant ou
+    la ligne s'execute. La production s'est arretee apres une heure de calcul,
+    sur la derniere ligne de l'etage des arriere-plans.
+    """
+    import ast
+    import builtins
+    import pathlib
+
+    racine = pathlib.Path(__file__).resolve().parents[1] / "src"
+    connus = set(dir(builtins)) | {"__file__", "__name__", "__doc__"}
+    fautifs: dict[str, list[str]] = {}
+
+    for fichier in sorted(racine.rglob("*.py")):
+        arbre = ast.parse(fichier.read_text(encoding="utf-8"))
+        definis: set[str] = set()
+        for noeud in ast.walk(arbre):
+            if isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                definis.add(noeud.name)
+            elif isinstance(noeud, ast.Name) and isinstance(noeud.ctx, ast.Store):
+                definis.add(noeud.id)
+            elif isinstance(noeud, ast.arg):
+                definis.add(noeud.arg)
+            elif isinstance(noeud, (ast.Import, ast.ImportFrom)):
+                for alias in noeud.names:
+                    definis.add((alias.asname or alias.name).split(".")[0])
+            elif isinstance(noeud, ast.ExceptHandler) and noeud.name:
+                definis.add(noeud.name)
+            elif isinstance(noeud, ast.comprehension) and isinstance(noeud.target, ast.Name):
+                definis.add(noeud.target.id)
+
+        manquants = sorted({
+            noeud.id for noeud in ast.walk(arbre)
+            if isinstance(noeud, ast.Name) and isinstance(noeud.ctx, ast.Load)
+            and noeud.id not in definis and noeud.id not in connus
+        })
+        if manquants:
+            fautifs[str(fichier.relative_to(racine))] = manquants
+
+    assert not fautifs, f"noms utilises mais jamais definis : {fautifs}"

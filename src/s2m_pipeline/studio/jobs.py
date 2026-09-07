@@ -130,11 +130,24 @@ def stage_report(output_dir: Path, videos_dir: Path, published_dir: Path) -> lis
         "publish": ((published_dir / "course_chapters.json").exists(), ""),
     }
 
+    # La chaine est strictement sequentielle : si un etage a produit quelque
+    # chose, tous ceux qui le precedent sont necessairement termines. Sans cette
+    # passe, un etage dont le resultat reste partiel par nature bloque
+    # l'affichage — les arriere-plans, par exemple, sont decoratifs et le
+    # service qui les fournit echoue parfois definitivement sur une scene.
+    ordre = [stage.key for stage in STAGES]
+    dernier_atteint = -1
+    for index, cle in enumerate(ordre):
+        if facts[cle][0]:
+            dernier_atteint = index
+    acheves = {cle: (facts[cle][0] or index < dernier_atteint)
+               for index, cle in enumerate(ordre)}
+
     report: list[dict] = []
     running_marked = False
     for stage in STAGES:
-        complete, detail = facts[stage.key]
-        if complete:
+        _, detail = facts[stage.key]
+        if acheves[stage.key]:
             state = "done"
         elif not running_marked:
             state, running_marked = "current", True

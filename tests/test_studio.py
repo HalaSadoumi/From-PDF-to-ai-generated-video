@@ -170,3 +170,20 @@ def test_a_forgotten_job_does_not_come_back(tmp_path, monkeypatch):
     assert worker.forget("a")
     worker._save()
     assert json.loads(store.read_text(encoding="utf-8"))["jobs"] == []
+
+
+def test_a_partial_stage_does_not_block_the_ones_after_it(tmp_path):
+    """Un etage au resultat partiel ne doit pas figer l'affichage.
+
+    Les arriere-plans sont decoratifs et le service qui les fournit echoue
+    parfois definitivement sur une scene : 71 sur 73. La chaine poursuit et rend
+    les videos, mais le suivi affichait « arriere-plans en cours » indefiniment
+    alors que le rendu etait fini.
+    """
+    report = _tree(tmp_path, pages=28, chapters=8, scenes=73, marks=True, visuals=True,
+                   cues=8, backdrops=71, videos=8, published=True)
+    etat = {s["key"]: s["state"] for s in report}
+    assert etat["images"] == "done"
+    assert etat["render"] == "done"
+    assert etat["publish"] == "done"
+    assert jobs.completed_stages(report) == len(jobs.STAGES)

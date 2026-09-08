@@ -290,6 +290,11 @@ def main() -> None:
     paths.root.mkdir(parents=True, exist_ok=True)
     total = 9
 
+    # Verifie des maintenant ce dont le huitieme etage aura besoin : mieux vaut
+    # refuser de partir que s'arreter apres quarante minutes de travail.
+    if args.stop_after in (None, "render"):
+        render.check_toolchain()
+
     _step(1, total, "Pages — read the deck")
     pages = run_pages(paths, args.pdf)
     if args.stop_after == "pages":

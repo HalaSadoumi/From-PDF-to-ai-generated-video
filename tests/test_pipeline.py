@@ -373,3 +373,72 @@ def test_no_module_uses_an_undefined_name():
             fautifs[str(fichier.relative_to(racine))] = manquants
 
     assert not fautifs, f"noms utilises mais jamais definis : {fautifs}"
+
+
+# ------------------------------------------- la chaine de rendu doit exister
+def _prepare_remotion(tmp_path, monkeypatch, *, avec_outils: bool):
+    """Un projet Remotion minimal, avec ou sans ses dependances installees."""
+    from s2m_pipeline.core import render
+
+    remotion = tmp_path / "remotion"
+    (remotion / "public" / "audio").mkdir(parents=True)
+    (remotion / "public" / "backdrops").mkdir(parents=True)
+    if avec_outils:
+        binaires = remotion / "node_modules" / ".bin"
+        binaires.mkdir(parents=True)
+        (binaires / "remotion.cmd").write_text("", encoding="utf-8")
+    monkeypatch.setattr(render, "REMOTION_DIR", remotion)
+    monkeypatch.setattr(render, "REMOTION_SHIM", remotion / "node_modules" / ".bin" / "remotion")
+    return render, remotion
+
+
+def test_a_missing_node_toolchain_is_refused_before_any_work(tmp_path, monkeypatch):
+    """Sans dependances Node, la chaine doit refuser de partir.
+
+    Defaut reel : dans un depot frais ou npm install n'avait jamais tourne, les
+    sept premiers etages ont abouti, puis les huit rendus ont echoue coup sur
+    coup sur « could not determine executable to run ».
+    """
+    render, _ = _prepare_remotion(tmp_path, monkeypatch, avec_outils=False)
+
+    with pytest.raises(RuntimeError) as echec:
+        render.check_toolchain()
+    # Le message doit dire quoi faire, pas seulement que ca ne marche pas.
+    assert "npm install" in str(echec.value)
+
+    _prepare_remotion(tmp_path / "installe", monkeypatch, avec_outils=True)
+    render.check_toolchain()
+
+
+def test_a_render_that_produces_nothing_stops_the_chain(tmp_path, monkeypatch):
+    """Zero video sur la totalite des chapitres n'est pas une reprise possible.
+
+    C'est ce silence qui avait laisse l'etage de publication exporter un cours
+    dont les huit chapitres n'existaient pas, et le studio afficher ce travail
+    comme termine.
+    """
+    from types import SimpleNamespace
+
+    render, remotion = _prepare_remotion(tmp_path, monkeypatch, avec_outils=True)
+
+    cours = tmp_path / "course"
+    (cours / "work" / "narration").mkdir(parents=True)
+    (cours / "work" / "backdrops").mkdir(parents=True)
+    (cours / "storyboard.json").write_text("[]", encoding="utf-8")
+    (cours / "scene_visuals.json").write_text("{}", encoding="utf-8")
+    (cours / "chapters.json").write_text(
+        json.dumps([{"id": "chapter_00"}, {"id": "chapter_01"}]), encoding="utf-8")
+    paths = SimpleNamespace(
+        storyboard=cours / "storyboard.json",
+        visuals=cours / "scene_visuals.json",
+        chapters=cours / "chapters.json",
+        narration_dir=cours / "work" / "narration",
+        backdrops=cours / "work" / "backdrops",
+    )
+
+    monkeypatch.setattr(render.subprocess, "run", lambda *a, **k: SimpleNamespace(
+        returncode=1, stdout="", stderr="npm error could not determine executable to run"))
+
+    with pytest.raises(RuntimeError) as echec:
+        render.run_render(paths, out_name="out_test")
+    assert "Aucun des 2 chapitres" in str(echec.value)

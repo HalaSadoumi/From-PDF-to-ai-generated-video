@@ -40,6 +40,29 @@ def _done(message: str) -> None:
     print(f"  -> {message}", flush=True)
 
 
+# Les etapes 1 a 7 n'ont besoin que de Python. Le rendu, lui, appelle la
+# chaine Node du projet Remotion, installee separement et volontairement hors
+# du depot (elle pese plusieurs centaines de mega-octets).
+REMOTION_SHIM = REMOTION_DIR / "node_modules" / ".bin" / "remotion"
+
+
+def check_toolchain() -> None:
+    """S'assurer avant de commencer que le rendu pourra s'executer.
+
+    Le rendu est le huitieme etage sur neuf. Sans ce controle en amont, une
+    chaine lancee dans un depot ou `npm install` n'a jamais tourne ecrit,
+    prononce et illustre le cours pendant quarante minutes, puis echoue sur
+    chacun des chapitres. C'est arrive : les huit rendus ont renvoye
+    « could not determine executable to run » et le cours a ete publie sans une
+    seule video. La verification coute une lecture de repertoire.
+    """
+    if not REMOTION_SHIM.exists() and not REMOTION_SHIM.with_suffix(".cmd").exists():
+        raise RuntimeError(
+            "Les dependances Node du rendu ne sont pas installees.\n"
+            f"    A lancer une fois : npm install --prefix \"{REMOTION_DIR}\""
+        )
+
+
 def run_images(paths: Paths) -> None:
     plans: dict[str, dict] = json.loads(paths.visuals.read_text(encoding="utf-8"))
     paths.backdrops.mkdir(parents=True, exist_ok=True)
@@ -104,6 +127,7 @@ def run_render(paths: Paths, out_name: str = "out") -> None:
     passes out_pdf/<course_id>, so two courses never share a target: without
     that, the second course would find the first's chapter_00.mp4, consider it
     already rendered, and publish someone else's video."""
+    check_toolchain()
     _sync_remotion_inputs(paths)
     out_dir = REMOTION_DIR / out_name
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -143,3 +167,16 @@ def run_render(paths: Paths, out_name: str = "out") -> None:
             print(f"      FAILED:\n{result.stderr[-1500:]}")
         else:
             print(f"      done ({target.stat().st_size // 1_000_000} MB)")
+
+    # Un chapitre manquant est rattrapable : la relance reprend la ou elle en
+    # est. Zero chapitre sur la totalite ne l'est pas, c'est une panne de la
+    # chaine de rendu elle-meme. Rendre la main normalement laisserait l'etage
+    # suivant publier un cours dont aucune video n'existe, et le studio
+    # afficherait ce travail comme termine.
+    rendus = [c for c in chapters if (out_dir / f"{c['id']}.mp4").exists()]
+    if chapters and not rendus:
+        raise RuntimeError(
+            f"Aucun des {len(chapters)} chapitres n'a ete rendu. "
+            "La chaine s'arrete ici plutot que de publier un cours sans video."
+        )
+    _done(f"{len(rendus)}/{len(chapters)} chapitres rendus")

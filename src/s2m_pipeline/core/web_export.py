@@ -125,7 +125,7 @@ def export(
     # built from one training: a full one that keeps everything the speaker
     # said, and a short one written from the support document. The catalogue
     # shows the difference so a learner picks knowingly.
-    track: str = "detaille",
+    track: str = "essentiel",
 ) -> None:
     chapters = [
         Chapter.model_validate(c) for c in json.loads(chapters_path.read_text(encoding="utf-8"))
@@ -209,7 +209,7 @@ def main() -> None:
         "--no-videos", action="store_true", help="Only refresh metadata, skip copying videos"
     )
     parser.add_argument(
-        "--track", default="detaille", choices=["detaille", "essentiel"],
+        "--track", default="essentiel", choices=["essentiel"],
         help="Which reading of the material this course is, shown in the catalogue",
     )
     args = parser.parse_args()

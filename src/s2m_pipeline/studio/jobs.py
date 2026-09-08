@@ -127,7 +127,11 @@ def stage_report(output_dir: Path, videos_dir: Path, published_dir: Path) -> lis
             chapter_count > 0 and videos >= chapter_count,
             f"{videos} / {chapter_count}" if chapter_count else "",
         ),
-        "publish": ((published_dir / "course_chapters.json").exists(), ""),
+        # Le fichier existe des qu'une publication a eu lieu, meme quand elle
+        # n'avait aucun chapitre a annoncer. Un cours sans chapitre n'est pas
+        # publie : le compter comme tel faisait passer, par la passe arriere
+        # ci-dessous, le rendu pour termine alors qu'il commencait a peine.
+        "publish": (_json_len(published_dir / "course_chapters.json") > 0, ""),
     }
 
     # La chaine est strictement sequentielle : si un etage a produit quelque

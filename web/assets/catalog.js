@@ -1,15 +1,9 @@
 /* Catalogue des formations.
  *
- * Une même formation peut donner deux cours : un parcours détaillé, qui garde
- * tout ce que l'intervenant a dit, et un parcours essentiel écrit à partir du
- * support. Le catalogue affiche la différence pour que l'apprenant choisisse
- * en connaissance de cause. */
+ * Les cours sont écrits à partir du support de formation. Le catalogue annonce
+ * ce que l'apprenant y trouvera avant qu'il ne s'engage. */
 
 const TRACKS = {
-  detaille: {
-    label: "Parcours détaillé",
-    hint: "Reprend l'intégralité de la session, chapitres longs.",
-  },
   essentiel: {
     label: "Parcours essentiel",
     hint: "Droit au but, chapitres de moins de cinq minutes.",
@@ -28,7 +22,7 @@ function progressFor(courseId, chapterCount) {
 }
 
 function card(course) {
-  const track = TRACKS[course.track] || TRACKS.detaille;
+  const track = TRACKS[course.track] || TRACKS.essentiel;
   const done = progressFor(course.id, course.chapters);
   const href = `course.html?course=${encodeURIComponent(course.id)}`;
 

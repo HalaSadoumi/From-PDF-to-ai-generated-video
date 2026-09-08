@@ -276,7 +276,7 @@ def main() -> None:
         help="Official quiz (Word). Without it, questions are generated from the narration.",
     )
     parser.add_argument(
-        "--track", default="essentiel", choices=["detaille", "essentiel"],
+        "--track", default="essentiel", choices=["essentiel"],
         help="How the catalogue presents this reading of the material",
     )
     parser.add_argument("--output-dir", type=Path, default=None)

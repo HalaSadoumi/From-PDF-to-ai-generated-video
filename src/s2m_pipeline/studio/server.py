@@ -57,7 +57,10 @@ async def create_job(
         raise HTTPException(422, "Le titre est obligatoire.")
     if not (pdf.filename or "").lower().endswith(".pdf"):
         raise HTTPException(422, "Le support doit être un fichier PDF.")
-    if track not in ("essentiel", "detaille"):
+    # Le parcours detaille venait de la chaine issue d'un enregistrement, qui
+    # ne fait pas partie de ce depot : il n'y a plus qu'une lecture possible
+    # du support, et le formulaire ne pose donc plus la question.
+    if track != "essentiel":
         raise HTTPException(422, "Parcours inconnu.")
 
     job_id = uuid.uuid4().hex[:12]

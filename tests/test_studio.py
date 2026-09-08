@@ -32,7 +32,7 @@ def test_unique_course_id_keeps_the_plain_name_when_it_is_free():
 
 # ---------------------------------------------------------------- avancement
 def _tree(tmp_path, *, pages=0, chapters=0, scenes=0, backdrops=0, videos=0, cues=0,
-          marks=False, visuals=False, published=False):
+          marks=False, visuals=False, published=False, published_chapters=None):
     output = tmp_path / "output"
     videos_dir = tmp_path / "render"
     published_dir = tmp_path / "web"
@@ -59,7 +59,9 @@ def _tree(tmp_path, *, pages=0, chapters=0, scenes=0, backdrops=0, videos=0, cue
         (videos_dir / f"chapter_{index:02d}.mp4").write_bytes(b"")
     if published:
         published_dir.mkdir(exist_ok=True)
-        (published_dir / "course_chapters.json").write_text("[]", encoding="utf-8")
+        annonces = chapters if published_chapters is None else published_chapters
+        (published_dir / "course_chapters.json").write_text(
+            json.dumps([{}] * annonces), encoding="utf-8")
 
     return jobs.stage_report(output, videos_dir, published_dir)
 
@@ -187,3 +189,22 @@ def test_a_partial_stage_does_not_block_the_ones_after_it(tmp_path):
     assert etat["render"] == "done"
     assert etat["publish"] == "done"
     assert jobs.completed_stages(report) == len(jobs.STAGES)
+
+
+def test_a_publication_without_a_single_chapter_is_not_a_finished_course(tmp_path):
+    """Publier zero chapitre n'est pas publier.
+
+    Defaut reel : une production dont les huit rendus avaient echoue a tout de
+    meme exporte le cours, avec une liste de chapitres vide. Le fichier existait,
+    l'etage de publication passait donc pour termine, et la passe arriere en
+    deduisait que le rendu l'etait aussi. La relance affichait « 9 / 9 etapes »
+    et « rendu termine » alors qu'elle en etait au premier chapitre sur huit.
+    """
+    report = _tree(tmp_path, pages=28, chapters=8, scenes=73, marks=True, visuals=True,
+                   cues=8, backdrops=73, videos=1, published=True, published_chapters=0)
+
+    etat = {s["key"]: s["state"] for s in report}
+    assert etat["images"] == "done"
+    assert etat["render"] == "current"
+    assert etat["publish"] == "pending"
+    assert jobs.completed_stages(report) == len(jobs.STAGES) - 2

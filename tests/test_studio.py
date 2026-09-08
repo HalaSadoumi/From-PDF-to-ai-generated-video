@@ -208,3 +208,20 @@ def test_a_publication_without_a_single_chapter_is_not_a_finished_course(tmp_pat
     assert etat["render"] == "current"
     assert etat["publish"] == "pending"
     assert jobs.completed_stages(report) == len(jobs.STAGES) - 2
+
+
+def test_a_second_subtitle_language_is_not_counted_as_extra_chapters(tmp_path):
+    """chapter_03.en.vtt est une traduction, pas un chapitre de plus.
+
+    Le suivi comptait tous les fichiers .vtt du dossier : un cours de huit
+    chapitres sous-titre en deux langues s'affichait « 16 pistes ».
+    """
+    output = tmp_path / "output"
+    (output / "subtitles").mkdir(parents=True)
+    for i in range(8):
+        (output / "subtitles" / f"chapter_{i:02d}.vtt").write_text("", encoding="utf-8")
+        (output / "subtitles" / f"chapter_{i:02d}.en.vtt").write_text("", encoding="utf-8")
+
+    report = jobs.stage_report(output, tmp_path / "render", tmp_path / "web")
+    detail = {s["key"]: s["detail"] for s in report}
+    assert detail["subtitles"] == "8 pistes"

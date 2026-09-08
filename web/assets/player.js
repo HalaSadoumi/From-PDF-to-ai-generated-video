@@ -27,6 +27,10 @@ let progress = { completed: [] };
 let annotations = {}; // { "chapter_00": { "12": {marked:true, note:"..."} } }
 let cues = []; // transcription du chapitre courant
 let followPlayback = true;
+// Index de la piste de sous-titres affichee, -1 quand elles sont coupees. Le
+// choix suit l'apprenant d'un chapitre a l'autre : on ne lui redemande pas sa
+// langue a chaque video.
+let pisteSousTitres = -1;
 
 /* ----------------------------------------------------------- utilitaires */
 function formatDuration(seconds) {
@@ -316,6 +320,19 @@ async function loadTranscript(chapter) {
   }
 }
 
+function appliquerSousTitres() {
+  const pistes = video.textTracks || [];
+  for (let i = 0; i < pistes.length; i++) {
+    pistes[i].mode = i === pisteSousTitres ? "showing" : "disabled";
+  }
+  const active = pisteSousTitres >= 0 && pistes[pisteSousTitres];
+  el("subtitle-btn").classList.toggle("active", Boolean(active));
+  el("subtitle-btn").textContent = active
+    ? `Sous-titres : ${pistes[pisteSousTitres].label}`
+    : "Sous-titres";
+}
+
+
 async function selectChapter(index) {
   current = index;
   const chapter = chapters[index];
@@ -326,16 +343,25 @@ async function selectChapter(index) {
 
   video.src = `${BASE}/videos/${chapter.id}.mp4`;
   while (video.firstChild) video.removeChild(video.firstChild);
-  if (chapter.subtitles) {
+  // L'ordre declare ici est celui que le bouton fait defiler.
+  const languesDisponibles = [
+    { fichier: chapter.subtitles, label: "Français", code: "fr" },
+    { fichier: chapter.subtitles_en, label: "English", code: "en" },
+  ].filter((piste) => piste.fichier);
+
+  for (const piste of languesDisponibles) {
     const track = document.createElement("track");
     track.kind = "subtitles";
-    track.label = "Français";
-    track.srclang = "fr";
-    track.src = `${BASE}/videos/${chapter.subtitles}`;
+    track.label = piste.label;
+    track.srclang = piste.code;
+    track.src = `${BASE}/videos/${piste.fichier}`;
     track.default = false;
     video.appendChild(track);
   }
-  el("subtitle-btn").disabled = !chapter.subtitles;
+  el("subtitle-btn").disabled = languesDisponibles.length === 0;
+  // Un chapitre peut offrir moins de langues que le precedent.
+  if (pisteSousTitres >= languesDisponibles.length) pisteSousTitres = -1;
+  appliquerSousTitres();
 
   el("chapter-title").textContent = chapter.title;
   el("chapter-time").textContent = `${chapter.timestamp} · ${formatDuration(chapter.duration)}`;
@@ -560,12 +586,10 @@ function wireControls() {
   );
 
   el("subtitle-btn").addEventListener("click", () => {
-    const track = video.textTracks && video.textTracks[0];
-    if (!track) return;
-    const on = track.mode === "showing";
-    track.mode = on ? "disabled" : "showing";
-    el("subtitle-btn").classList.toggle("active", !on);
-    el("subtitle-btn").textContent = on ? "Sous-titres" : "Sous-titres : activés";
+    const disponibles = video.textTracks ? video.textTracks.length : 0;
+    if (!disponibles) return;
+    pisteSousTitres = pisteSousTitres + 1 >= disponibles ? -1 : pisteSousTitres + 1;
+    appliquerSousTitres();
   });
 
   el("mark-btn").addEventListener("click", markCurrentCue);

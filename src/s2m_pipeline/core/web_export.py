@@ -80,6 +80,13 @@ def _export_chapters(
             if vtt.exists():
                 shutil.copy(vtt, videos_dir / vtt.name)
                 exported[-1]["subtitles"] = f"{chapter.id}.vtt"
+            # Les langues supplementaires suivent la meme regle : presentes,
+            # elles sont publiees ; absentes, le lecteur n'en propose pas.
+            for langue in ("en",):
+                traduite = subtitle_dir / f"{chapter.id}.{langue}.vtt"
+                if traduite.exists():
+                    shutil.copy(traduite, videos_dir / traduite.name)
+                    exported[-1][f"subtitles_{langue}"] = traduite.name
 
     return exported, missing
 

@@ -85,6 +85,58 @@ class ScriptOutput(BaseModel):
     script: str
 
 
+class TranslatedLines(BaseModel):
+    lines: list[str]
+
+
+_TRANSLATE_PROMPT = """Tu traduis les sous-titres d'un cours e-learning professionnel du francais vers {langue}.
+
+Regles absolues :
+- Rends EXACTEMENT {compte} lignes, dans le meme ordre. Une ligne d'entree donne une ligne de sortie.
+- Ne fusionne jamais deux lignes, n'en decoupe jamais une. Chaque ligne est calee sur une phrase prononcee, a la milliseconde : deplacer du texte d'une ligne a l'autre le ferait apparaitre au mauvais moment.
+- Garde la terminologie technique exacte du domaine (cybersecurite, moyens de paiement). Les sigles restent tels quels.
+- Registre de sous-titre : phrase naturelle et lisible d'un coup d'oeil, pas de traduction mot a mot laborieuse.
+- Si une ligne est deja dans la langue cible ou n'est qu'un sigle, rends-la inchangee.
+
+--- LES {compte} LIGNES A TRADUIRE ---
+{lignes}
+"""
+
+
+def translate_lines(lines: list[str], langue: str = "anglais") -> list[str]:
+    """Traduire des repliques de sous-titres en preservant leur decoupage.
+
+    Le minutage des sous-titres vient des reperes que le moteur de synthese
+    renvoie pendant qu'il parle : chaque replique est calee sur une phrase
+    reelle. La traduction ne peut donc pas regrouper ni scinder — une ligne
+    entre, une ligne sort, sinon le texte s'affiche sur la mauvaise phrase.
+    C'est pourquoi le compte est verifie plutot que suppose.
+    """
+    if not lines:
+        return []
+
+    client = _get_client()
+    numerotees = "\n".join(f"{i + 1}. {ligne}" for i, ligne in enumerate(lines))
+    prompt = _TRANSLATE_PROMPT.format(langue=langue, compte=len(lines), lignes=numerotees)
+
+    response = _generate_content(
+        client,
+        model=settings.gemini_model,
+        contents=[prompt],
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=TranslatedLines,
+        ),
+    )
+    traduites = TranslatedLines.model_validate_json(response.text).lines
+    if len(traduites) != len(lines):
+        raise ValueError(
+            f"La traduction a rendu {len(traduites)} lignes pour {len(lines)} attendues : "
+            "les sous-titres seraient decales."
+        )
+    return traduites
+
+
 VISUAL_TYPES = [
     "title_card",
     "bullet_list",

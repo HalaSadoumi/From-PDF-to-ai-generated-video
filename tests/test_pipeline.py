@@ -442,3 +442,79 @@ def test_a_render_that_produces_nothing_stops_the_chain(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError) as echec:
         render.run_render(paths, out_name="out_test")
     assert "Aucun des 2 chapitres" in str(echec.value)
+
+
+# ------------------------------------------- une seconde langue de sous-titres
+def test_a_translated_track_keeps_the_original_timings(tmp_path, monkeypatch):
+    """La traduction remplace le texte, jamais le minutage.
+
+    Les bornes viennent des reperes que le moteur de synthese renvoie pendant
+    qu'il parle : elles sont calees sur la voix reelle. Les recalculer, ou
+    laisser la traduction regrouper deux repliques, ferait apparaitre le texte
+    sur la mauvaise phrase.
+    """
+    from s2m_pipeline.core import subtitle_translation
+    from s2m_pipeline.core.chapter_subtitles import Cue, write_vtt
+
+    piste = tmp_path / "chapter_00.vtt"
+    write_vtt([
+        Cue(start=0.1, end=6.862, text="La cybersecurite protege les systemes."),
+        Cue(start=6.862, end=13.35, text="Elle concerne aussi les reseaux."),
+    ], piste)
+
+    monkeypatch.setattr(subtitle_translation.llm, "translate_lines",
+                        lambda lignes, langue: [f"EN::{l}" for l in lignes])
+
+    cible = subtitle_translation.translate_track(piste, "en")
+    assert cible == tmp_path / "chapter_00.en.vtt"
+
+    origine = subtitle_translation.read_vtt(piste)
+    traduite = subtitle_translation.read_vtt(cible)
+    assert [(c.start, c.end) for c in traduite] == [(c.start, c.end) for c in origine]
+    assert [c.text for c in traduite] == [
+        "EN::La cybersecurite protege les systemes.",
+        "EN::Elle concerne aussi les reseaux.",
+    ]
+
+    # Deja traduite : on ne refait pas le travail au passage suivant.
+    assert subtitle_translation.translate_track(piste, "en") is None
+
+
+def test_a_translation_that_loses_a_line_is_refused(tmp_path, monkeypatch):
+    """Un compte de lignes different doit echouer, pas se laisser tronquer.
+
+    zip() s'arrete au plus court : sans garde, un chapitre traduit avec une
+    replique en moins sortirait ampute de sa derniere phrase, sans rien dire.
+    """
+    from s2m_pipeline.core import subtitle_translation
+    from s2m_pipeline.core.chapter_subtitles import Cue, write_vtt
+
+    piste = tmp_path / "chapter_01.vtt"
+    write_vtt([
+        Cue(start=0.0, end=2.0, text="Premiere phrase."),
+        Cue(start=2.0, end=4.0, text="Deuxieme phrase."),
+        Cue(start=4.0, end=6.0, text="Troisieme phrase."),
+    ], piste)
+
+    monkeypatch.setattr(subtitle_translation.llm, "translate_lines",
+                        lambda lignes, langue: ["First sentence.", "Second sentence."])
+
+    with pytest.raises(ValueError):
+        subtitle_translation.translate_track(piste, "en")
+    assert not (tmp_path / "chapter_01.en.vtt").exists()
+
+
+def test_the_english_tracks_are_not_taken_for_sources_to_translate(tmp_path, monkeypatch):
+    """Un second passage ne doit pas traduire ses propres traductions."""
+    from s2m_pipeline.core import subtitle_translation
+    from s2m_pipeline.core.chapter_subtitles import Cue, write_vtt
+
+    for nom in ("chapter_00", "chapter_01"):
+        write_vtt([Cue(start=0.0, end=2.0, text=f"Texte de {nom}.")], tmp_path / f"{nom}.vtt")
+
+    monkeypatch.setattr(subtitle_translation.llm, "translate_lines",
+                        lambda lignes, langue: [l.upper() for l in lignes])
+
+    assert subtitle_translation.translate_directory(tmp_path, "en") == (2, 0)
+    # Les deux .en.vtt existent maintenant : ils ne doivent pas etre repris.
+    assert subtitle_translation.translate_directory(tmp_path, "en") == (0, 2)

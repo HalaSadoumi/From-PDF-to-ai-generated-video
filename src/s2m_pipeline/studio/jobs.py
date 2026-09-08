@@ -110,7 +110,11 @@ def stage_report(output_dir: Path, videos_dir: Path, published_dir: Path) -> lis
     scene_count = _json_len(storyboard)
     backdrops = _count(output_dir / "work" / "backdrops", "*.jpg")
     videos = _count(videos_dir, "*.mp4")
-    cues = _count(output_dir / "subtitles", "*.vtt")
+    # Une piste par chapitre, pas une par langue : chapter_03.en.vtt est la
+    # traduction de chapter_03.vtt, pas un chapitre de plus. Sans ce filtre,
+    # un cours de huit chapitres annoncait « 16 pistes ».
+    cues = len([p for p in (output_dir / "subtitles").glob("*.vtt")
+                if "." not in p.stem]) if (output_dir / "subtitles").is_dir() else 0
 
     facts: dict[str, tuple[bool, str]] = {
         "pages": (pages.exists(), f"{page_count} pages" if page_count else ""),

@@ -26,7 +26,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from s2m_pipeline.core import chapter_subtitles
+from s2m_pipeline.core import chapter_subtitles, subtitle_translation
 from s2m_pipeline.core import render
 from s2m_pipeline.core import llm
 from s2m_pipeline.from_slides import narration
@@ -383,6 +383,18 @@ def run_subtitles(paths: Paths, scenes: list[StoryboardScene]) -> None:
         total_cues += len(cues)
 
     _done(f"{len(by_chapter)} tracks, {total_cues} cues")
+
+    # La piste anglaise reprend les bornes de la francaise sans les recalculer :
+    # elle ne coute qu'un appel au modele allege par chapitre, et n'oblige a
+    # refaire ni la voix ni le rendu.
+    try:
+        ecrites, deja = subtitle_translation.translate_directory(paths.subtitles, "en")
+        _done(f"English track: {ecrites} translated, {deja} already there")
+    except Exception as erreur:                       # noqa: BLE001
+        # Une langue en plus est un confort, pas le cours. Si le modele refuse
+        # ou rend un compte de lignes incoherent, la production continue avec
+        # la seule piste francaise plutot que de s'arreter a l'etage 5 sur 9.
+        print(f"  English track skipped: {erreur}", flush=True)
 
 
 def run_quiz(
